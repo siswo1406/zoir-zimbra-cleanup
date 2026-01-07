@@ -13,14 +13,10 @@ Prasyarat
 - Akses SSH ke server Zimbra sebagai `root` (untuk `su - zimbra`).
 - Zimbra CLI tersedia di server (perintah `zmmailbox`).
 - Jalankan dari mesin yang punya akses jaringan ke server target.
+- Disarankan shell dengan Oh My Zsh + plugin `zsh-autosuggestions` dan `zsh-syntax-highlighting` agar input lebih nyaman.
 
 Setup Repo
-- Clone langsung: `git clone <URL_REPO> && cd zimbra-cleanup-script`.
-- Atau mulai dari folder lokal lalu hubungkan remote:
-  1) `git init`
-  2) `git remote add origin git@github.com:org/zimbra-cleanup-script.git` (atau URL lain)
-  3) `git add . && git commit -m "init"`
-  4) `git push -u origin main`
+- Clone langsung: `git clone https://git.ptmjl.co.id/MIS/zimbra_cleanup_script.git && cd zimbra-cleanup-script`.
 
 Cara Pakai
 1) Pastikan skrip bisa dieksekusi: `chmod +x zimbra_cleanup.sh`.
