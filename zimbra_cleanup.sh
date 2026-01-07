@@ -73,7 +73,7 @@ LOG_FILE=\"\$LOG_BASE/cleanup_\$(date +%Y%m%d).log\"
 TMP_DIR=\"\$LOG_BASE/tmp_\$(date +%H%M%S)_\$\$\"
 TMP_LIST=\"\$TMP_DIR/list.txt\"
 
-trap 'echo \"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\" >> \"\$LOG_FILE\"; rm -rf \"\$TMP_DIR\"; exit 130' INT
+trap \"echo \\\"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\\\" >> \\\"\$LOG_FILE\\\"; rm -rf \\\"\$TMP_DIR\\\"; exit 130\" INT
 
 mkdir -p \"\$TMP_DIR\"
 mkdir -p \"\$LOG_BASE\"
