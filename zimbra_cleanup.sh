@@ -22,10 +22,10 @@ echo "=== ZIMBRA MAILBOX CLEANUP ==="
 echo
 
 read -p "Mailbox username (tanpa domain)    : " USERNAME
-read -p "Before date (MM/DD/YYYY) [bisnis] : " BEFORE_DATE
-read -p "Server IP [$DEFAULT_SERVER]       : " SERVER
-read -p "SSH Port [$DEFAULT_PORT]          : " SSH_PORT
-read -p "SSH key owner/name (mis: siswo)   : " KEY_NAME
+read -p "Before date (MM/DD/YYYY) [bisnis]  : " BEFORE_DATE
+read -p "Server IP [$DEFAULT_SERVER]        : " SERVER
+read -p "SSH Port [$DEFAULT_PORT]           : " SSH_PORT
+read -p "SSH key owner/name (mis: siswo)    : " KEY_NAME
 
 SERVER="${SERVER:-$DEFAULT_SERVER}"
 SSH_PORT="${SSH_PORT:-$DEFAULT_PORT}"
