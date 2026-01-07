@@ -61,17 +61,6 @@ read -p "Proceed? [Y/n]: " CONFIRM
 CONFIRM=${CONFIRM:-y}
 [[ ! "$CONFIRM" =~ ^[Yy]$ ]] && exit 0
 
-REMOTE_LOG_BASE="/opt/zimbra/.log-zimbra-cleanup"
-REMOTE_LOG_FILE="$REMOTE_LOG_BASE/cleanup_$(date +%Y%m%d).log"
-
-on_cancel() {
-  trap - INT
-  ssh -p "$SSH_PORT" -i "$SSH_KEY" ${SSH_USER}@${SERVER} \
-    "mkdir -p \"$REMOTE_LOG_BASE\" && echo \"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\" >> \"$REMOTE_LOG_FILE\""
-  exit 130
-}
-trap on_cancel INT
-
 # ==================================================
 # EXECUTION (REMOTE)
 # ==================================================
@@ -84,7 +73,17 @@ LOG_FILE=\"\$LOG_BASE/cleanup_\$(date +%Y%m%d).log\"
 TMP_DIR=\"\$LOG_BASE/tmp_\$(date +%H%M%S)_\$\$\"
 TMP_LIST=\"\$TMP_DIR/list.txt\"
 
-trap \"echo \\\"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\\\" >> \\\"\$LOG_FILE\\\"; rm -rf \\\"\$TMP_DIR\\\"; exit 130\" INT
+cleanup() {
+  rm -rf \"\$TMP_DIR\"
+}
+
+on_cancel() {
+  echo \"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\" >> \"\$LOG_FILE\"
+  exit 130
+}
+
+trap cleanup EXIT
+trap on_cancel INT HUP
 
 mkdir -p \"\$TMP_DIR\"
 mkdir -p \"\$LOG_BASE\"
