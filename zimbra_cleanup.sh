@@ -61,6 +61,17 @@ read -p "Proceed? [Y/n]: " CONFIRM
 CONFIRM=${CONFIRM:-y}
 [[ ! "$CONFIRM" =~ ^[Yy]$ ]] && exit 0
 
+REMOTE_LOG_BASE="/opt/zimbra/.log-zimbra-cleanup"
+REMOTE_LOG_FILE="$REMOTE_LOG_BASE/cleanup_$(date +%Y%m%d).log"
+
+on_cancel() {
+  trap - INT
+  ssh -p "$SSH_PORT" -i "$SSH_KEY" ${SSH_USER}@${SERVER} \
+    "mkdir -p \"$REMOTE_LOG_BASE\" && echo \"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\" >> \"$REMOTE_LOG_FILE\""
+  exit 130
+}
+trap on_cancel INT
+
 # ==================================================
 # EXECUTION (REMOTE)
 # ==================================================
