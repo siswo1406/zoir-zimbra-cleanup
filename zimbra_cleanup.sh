@@ -107,6 +107,7 @@ DELIM=\"|\"
 
 QUERY_BISNIS=\"(subject:\\\"data penjualan\\\" OR content:\\\"data penjualan\\\" OR \
 subject:\\\"rekap doc\\\" OR content:\\\"rekap doc\\\" OR \
+subject:\\\"doc gabungan\\\" OR content:\\\"doc gabungan\\\" OR \
 subject:\\\"rekap rhpp\\\" OR content:\\\"rekap rhpp\\\" OR \
 subject:\\\"laporan kasir\\\" OR content:\\\"laporan kasir\\\" OR \
 subject:\\\"rekap penjualan\\\" OR content:\\\"rekap penjualan\\\") before:\\\"$BEFORE_DATE\\\"\"
