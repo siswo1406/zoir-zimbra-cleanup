@@ -85,6 +85,9 @@ on_cancel() {
 trap cleanup EXIT
 trap on_cancel INT HUP
 
+# Bersihkan tmp_* yang tertinggal (lebih tua dari 1 hari)
+find \"\$LOG_BASE\" -maxdepth 1 -type d -name 'tmp_*' -mtime +0 -print -exec rm -rf {} + >/dev/null 2>&1
+
 mkdir -p \"\$TMP_DIR\"
 mkdir -p \"\$LOG_BASE\"
 > \"\$TMP_LIST\"
