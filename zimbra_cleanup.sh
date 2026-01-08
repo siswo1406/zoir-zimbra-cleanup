@@ -73,7 +73,20 @@ LOG_FILE=\"\$LOG_BASE/cleanup_\$(date +%Y%m%d).log\"
 TMP_DIR=\"\$LOG_BASE/tmp_\$(date +%H%M%S)_\$\$\"
 TMP_LIST=\"\$TMP_DIR/list.txt\"
 
-trap 'echo \"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\" >> \"\$LOG_FILE\"; rm -rf \"\$TMP_DIR\"; exit 130' INT
+cleanup() {
+  rm -rf \"\$TMP_DIR\"
+}
+
+on_cancel() {
+  echo \"[CANCEL] Aborted by user at \$(date +%H:%M:%S)\" >> \"\$LOG_FILE\"
+  exit 130
+}
+
+trap cleanup EXIT
+trap on_cancel INT HUP
+
+# Bersihkan tmp_* yang tertinggal (lebih tua dari 1 hari)
+find \"\$LOG_BASE\" -maxdepth 1 -type d -name 'tmp_*' -mtime +0 -print -exec rm -rf {} + >/dev/null 2>&1
 
 mkdir -p \"\$TMP_DIR\"
 mkdir -p \"\$LOG_BASE\"
@@ -94,6 +107,7 @@ DELIM=\"|\"
 
 QUERY_BISNIS=\"(subject:\\\"data penjualan\\\" OR content:\\\"data penjualan\\\" OR \
 subject:\\\"rekap doc\\\" OR content:\\\"rekap doc\\\" OR \
+subject:\\\"doc gabungan\\\" OR content:\\\"doc gabungan\\\" OR \
 subject:\\\"rekap rhpp\\\" OR content:\\\"rekap rhpp\\\" OR \
 subject:\\\"laporan kasir\\\" OR content:\\\"laporan kasir\\\" OR \
 subject:\\\"rekap penjualan\\\" OR content:\\\"rekap penjualan\\\") before:\\\"$BEFORE_DATE\\\"\"
