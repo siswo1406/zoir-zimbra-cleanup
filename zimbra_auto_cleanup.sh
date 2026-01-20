@@ -129,10 +129,10 @@ while IFS="|" read -r MAILBOX PERCENT; do
 
         while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then
-                echo "[$(date +%H:%M:%S)] [DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
                 TOTAL_DELETED=$((TOTAL_DELETED + 1))
             else
-                echo "[$(date +%H:%M:%S)] [DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
                 TOTAL_FAILED=$((TOTAL_FAILED + 1))
             fi
         done < "$TMP_DIR/msg_list.txt"
@@ -158,10 +158,10 @@ while IFS="|" read -r MAILBOX PERCENT; do
         
         while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then
-                echo "[$(date +%H:%M:%S)] [DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
                 TOTAL_SYS_DEL=$((TOTAL_SYS_DEL + 1))
             else
-                echo "[$(date +%H:%M:%S)] [DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
                 TOTAL_SYS_FAIL=$((TOTAL_SYS_FAIL + 1))
             fi
         done < "$TMP_DIR/sys_list.txt"
