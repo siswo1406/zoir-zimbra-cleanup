@@ -7,8 +7,8 @@
 # ---------- CONFIG ----------
 
 # Server Options
-SERVER_LOCAL="xxx.xxx.xxx.xxx"
-SERVER_PUBLIC="xxx.xxx.xxx.xxx" # IP Public Server Zimbra
+SERVER_LOCAL="xxx.xxx.xxx.xxx"  # Change to your Local Zimbra Server IP
+SERVER_PUBLIC="xxx.xxx.xxx.xxx" # Change to your Public Zimbra Server IP
 
 SSH_PORT=22
 SSH_USER="root"
