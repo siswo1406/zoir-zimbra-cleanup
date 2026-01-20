@@ -87,13 +87,13 @@ $ZMPROV gqu localhost | awk -v limit="$THRESHOLD" '
 COUNT_ACCOUNTS=$(wc -l < "$ACCOUNTS_LIST")
 
 if [ "$COUNT_ACCOUNTS" -eq 0 ]; then
-    echo "[$(date +%H:%M:%S)] [INFO] No accounts over threshold. Done." >> "$LOG_FILE"
+    echo "$(date '+%b %d %Y - %H:%M:%S') [INFO] No accounts over threshold. Done." >> "$LOG_FILE"
     exit 0
 fi
 
 # ---------- 5. MAIN PROCESSING LOOP ----------
 while IFS="|" read -r MAILBOX PERCENT; do
-    echo "[$(date +%H:%M:%S)] [PROCESS] $MAILBOX (Usage: $PERCENT%)" >> "$LOG_FILE"
+    echo "$(date '+%b %d %Y - %H:%M:%S') [PROCESS] $MAILBOX (Usage: $PERCENT%)" >> "$LOG_FILE"
     
     # --- A. Empty Trash ---
     if $ZMMAILBOX -z -m "$MAILBOX" ef /Trash > /dev/null 2>&1; then
@@ -115,18 +115,22 @@ while IFS="|" read -r MAILBOX PERCENT; do
             break
         fi
 
-        # Parse results - Using verbose output to get COMPLETE (Lengkap) Sender
-        awk '
-          /^  Id: / { id=$2; sub(/\.$/, "", id) }
-          /^  Date: / { date=$2; time=$3 }
-          /^  From: / { f=index($0, ": "); sender=substr($0, f+2) }
-          /^  Subject: / { f=index($0, ": "); subj=substr($0, f+2) }
-          /^  Size: / { 
-            if (id != "") {
-              printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
-              id=""; date=""; time=""; sender=""; subj="";
-            }
-          }' "$RAW_SEARCH" > "$TMP_DIR/msg_list.txt"
+        # Parse results - Using Python to handle JSON output correctly
+        python3 -c '
+import sys, json, datetime
+try:
+    data = json.load(sys.stdin)
+    for msg in data.get("messages", []):
+        id = msg.get("id", "")
+        dt = datetime.datetime.fromtimestamp(msg.get("date", 0)/1000.0)
+        d_str = dt.strftime("%m/%d/%y")
+        t_str = dt.strftime("%H:%M")
+        sender = next((r.get("fullAddressQuoted", r.get("address", "")) for r in msg.get("recipients", []) if r.get("type") == "f"), "")
+        subj = msg.get("subject", "")
+        print(f"{id}|{d_str}|{t_str}|{sender}|{subj}")
+except Exception:
+    pass
+' < "$RAW_SEARCH" > "$TMP_DIR/msg_list.txt"
 
         MSG_COUNT=$(wc -l < "$TMP_DIR/msg_list.txt")
         [ "$MSG_COUNT" -eq 0 ] && break
@@ -150,18 +154,22 @@ while IFS="|" read -r MAILBOX PERCENT; do
     
     SYS_RAW="$TMP_DIR/sys_raw.txt"
     if $ZMMAILBOX -z -m "$MAILBOX" s -l 100 -v "$QUERY_SYSTEM" > "$SYS_RAW" 2>&1; then
-        # Parse system alerts same way as business items - Fixed for negative IDs
-        awk '
-          /^  Id: / { id=$2; sub(/\.$/, "", id) }
-          /^  Date: / { date=$2; time=$3 }
-          /^  From: / { f=index($0, ": "); sender=substr($0, f+2) }
-          /^  Subject: / { f=index($0, ": "); subj=substr($0, f+2) }
-          /^  Size: / { 
-            if (id != "") {
-              printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
-              id=""; date=""; time=""; sender=""; subj="";
-            }
-          }' "$SYS_RAW" > "$TMP_DIR/sys_list.txt"
+        # Parse results - Using Python to handle JSON output correctly
+        python3 -c '
+import sys, json, datetime
+try:
+    data = json.load(sys.stdin)
+    for msg in data.get("messages", []):
+        id = msg.get("id", "")
+        dt = datetime.datetime.fromtimestamp(msg.get("date", 0)/1000.0)
+        d_str = dt.strftime("%m/%d/%y")
+        t_str = dt.strftime("%H:%M")
+        sender = next((r.get("fullAddressQuoted", r.get("address", "")) for r in msg.get("recipients", []) if r.get("type") == "f"), "")
+        subj = msg.get("subject", "")
+        print(f"{id}|{d_str}|{t_str}|{sender}|{subj}")
+except Exception:
+    pass
+' < "$SYS_RAW" > "$TMP_DIR/sys_list.txt"
         
         while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then

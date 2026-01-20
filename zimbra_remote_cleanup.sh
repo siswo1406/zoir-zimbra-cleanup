@@ -14,49 +14,37 @@ SSH_PORT=22
 SSH_USER="root"
 SSH_KEY="$HOME/.ssh/zimbra_admin"
 
-# Cleanup Criteria
-THRESHOLD=90        # Process accounts >= 90% quota usage
-DAYS_KEEP=2        # Delete emails older than X days
-LOG_KEEP_DAYS=7    # Keep logs for 7 days
+# Cleanup Options
+THRESHOLD=90        # Process accounts >= 90% usage
+BEFORE_DATE=$(date -d "2 days ago" "+%m/%d/%Y")
+LOG_KEEP_DAYS=7     # Keep logs for 7 days
 
-# Logger
-LOG_LOCAL="$HOME/zimbra_remote_cleanup.log"
+# ---------- 0. PRE-FLIGHT ----------
 
-# ==================================================
+# Ensure ssh key exists
+if [ ! -f "$SSH_KEY" ]; then
+  echo "[ERROR] SSH Key not found: $SSH_KEY"
+  exit 1
+fi
 
-# Calculate Date
-BEFORE_DATE=$(date -d "$DAYS_KEEP days ago" "+%m/%d/%Y")
-
-echo "=== ZIMBRA REMOTE CLEANUP ==="
-echo "Select Server Connection:"
+# Select Server
+echo "Select Zimbra Server:"
 echo "1) LOCAL  ($SERVER_LOCAL)"
 echo "2) PUBLIC ($SERVER_PUBLIC)"
+read -p "Option [1-2]: " SERVER_OPT
+if [ "$SERVER_OPT" == "2" ]; then
+  SERVER=$SERVER_PUBLIC
+else
+  SERVER=$SERVER_LOCAL
+fi
+
+LOG_LOCAL="remote_run_$(date +%Y%m%d).log"
+
 echo "-----------------------------"
-read -n 1 -r -p "Choice [1/2]: " CHOICE
-echo # Newline after input
-
-case "$CHOICE" in
-  1)
-    SERVER="$SERVER_LOCAL"
-    ;;
-  2)
-    SERVER="$SERVER_PUBLIC"
-    ;;
-  *)
-    echo "Invalid choice. Exiting."
-    exit 1
-    ;;
-esac
-
-echo
-echo "Target    : $SERVER"
-echo "Threshold : $THRESHOLD%"
-echo "Before    : $BEFORE_DATE"
+echo "Target Server : $SERVER"
+echo "Threshold     : $THRESHOLD%"
+echo "Before Date   : $BEFORE_DATE"
 echo "-----------------------------"
-
-# Start without asking again (since they just selected the server)
-# or keeps the confirmation? The user asked to "select ip ... without enter".
-# I'll keep the confirmation for safety but minimal.
 
 echo "[LOCAL] Connecting to $SERVER..." | tee -a "$LOG_LOCAL"
 
@@ -214,21 +202,22 @@ while read -r MAILBOX; do
        break
     fi
     
-    # Check if empty or no results
-    if grep -q \"No results found\" \"\$TMP_DIR/raw_search.txt\"; then
-       break
-    fi
-
-    grep -E \"^[[:space:]]*-?[0-9]+\.\" \"\$TMP_DIR/raw_search.txt\" | tr -s \" \" | awk '\''{ 
-      # Robustly find ID: it is the first field that looks like a number (can be -)
-      id = (\$2 ~ /^-?[0-9]+\$/) ? \$2 : \$3;
-      # Folder is 1 col after ID, Sender is 1 col after Folder
-      s_idx = (id == \$2) ? 4 : 5;
-      date = \$(NF-1); time = \$NF; 
-      sender = \$s_idx;
-      subject = \"\"; for(i=s_idx+1; i<=(NF-2); i++) subject = subject (subject==\"\"?\"\":\" \") \$i;
-      printf \"%s|%s|%s|%s|%s\\n\", id, date, time, sender, subject;
-    }'\'' > \"\$TMP_LIST\"
+    # Parse results - Using Python to handle JSON output correctly
+    python3 -c '\''
+import sys, json, datetime
+try:
+    data = json.load(sys.stdin)
+    for msg in data.get(\"messages\", []):
+        id = msg.get(\"id\", \"\")
+        dt = datetime.datetime.fromtimestamp(msg.get(\"date\", 0)/1000.0)
+        d_str = dt.strftime(\"%m/%d/%y\")
+        t_str = dt.strftime(\"%H:%M\")
+        sender = next((r.get(\"fullAddressQuoted\", r.get(\"address\", \"\")) for r in msg.get(\"recipients\", []) if r.get(\"type\") == \"f\"), \"\")
+        subj = msg.get(\"subject\", \"\")
+        print(f\"{id}|{d_str}|{t_str}|{sender}|{subj}\")
+except Exception:
+    pass
+'\'' < \"\$TMP_DIR/raw_search.txt\" > \"\$TMP_LIST\"
       
     COUNT=\$(wc -l < \"\$TMP_LIST\")
     [ \"\$COUNT\" -eq 0 ] && break
@@ -243,10 +232,10 @@ while read -r MAILBOX; do
       
       # DELETE ITEM
       if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-         echo \"\$(date '+%b %d %Y - %H:%M:%S') [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
          TOTAL_DELETED=\$((TOTAL_DELETED + 1))
       else
-         echo \"\$(date '+%b %d %Y - %H:%M:%S') [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
       fi
       draw_bar \"\$CUR_MSG\" \"\$COUNT\"
     done < \"\$TMP_LIST\"
@@ -257,14 +246,22 @@ while read -r MAILBOX; do
   # SYSTEM MAILS
   > \"\$TMP_LIST\"
   if zmmailbox -z -m \$MAILBOX s -l 500 -v \"\$QUERY_SYSTEM\" > \"\$TMP_DIR/raw_sys.txt\" 2>&1; then
-    grep -E \"^[[:space:]]*-?[0-9]+\.\" \"\$TMP_DIR/raw_sys.txt\" | tr -s \" \" | awk '\''{ 
-      id = (\$2 ~ /^-?[0-9]+\$/) ? \$2 : \$3;
-      s_idx = (id == \$2) ? 4 : 5;
-      date = \$(NF-1); time = \$NF; 
-      sender = \$s_idx;
-      subject = \"\"; for(i=s_idx+1; i<=(NF-2); i++) subject = subject (subject==\"\"?\"\":\" \") \$i;
-      printf \"%s|%s|%s|%s|%s\\n\", id, date, time, sender, subject;
-    }'\'' > \"\$TMP_LIST\"
+    # Parse system alerts
+    python3 -c '\''
+import sys, json, datetime
+try:
+    data = json.load(sys.stdin)
+    for msg in data.get(\"messages\", []):
+        id = msg.get(\"id\", \"\")
+        dt = datetime.datetime.fromtimestamp(msg.get(\"date\", 0)/1000.0)
+        d_str = dt.strftime(\"%m/%d/%y\")
+        t_str = dt.strftime(\"%H:%M\")
+        sender = next((r.get(\"fullAddressQuoted\", r.get(\"address\", \"\")) for r in msg.get(\"recipients\", []) if r.get(\"type\") == \"f\"), \"\")
+        subj = msg.get(\"subject\", \"\")
+        print(f\"{id}|{d_str}|{t_str}|{sender}|{subj}\")
+except Exception:
+    pass
+'\'' < \"\$TMP_DIR/raw_sys.txt\" > \"\$TMP_LIST\"
 
     SYS_COUNT=\$(wc -l < \"\$TMP_LIST\")
     if [ \"\$SYS_COUNT\" -gt 0 ]; then
@@ -277,10 +274,10 @@ while read -r MAILBOX; do
         DISPLAY_ID=\${ID#-}
         
         if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-           echo \"\$(date '+%b %d %Y - %H:%M:%S') [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
            TOTAL_SYS_DEL=\$((TOTAL_SYS_DEL + 1))
         else
-           echo \"\$(date '+%b %d %Y - %H:%M:%S') [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
            TOTAL_SYS_FAIL=\$((TOTAL_SYS_FAIL + 1))
         fi
         draw_bar \"\$CUR_SYS\" \"\$SYS_COUNT\"
