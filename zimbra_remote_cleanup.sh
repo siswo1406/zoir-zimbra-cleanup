@@ -242,10 +242,10 @@ while read -r MAILBOX; do
       
       # DELETE ITEM
       if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-         echo \"[DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+         echo \"[\$(date +%H:%M:%S)] [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
          TOTAL_DELETED=\$((TOTAL_DELETED + 1))
       else
-         echo \"[DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+         echo \"[\$(date +%H:%M:%S)] [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
       fi
       draw_bar \"\$CUR_MSG\" \"\$COUNT\"
     done < \"\$TMP_LIST\"
@@ -276,10 +276,10 @@ while read -r MAILBOX; do
         DISPLAY_ID=\${ID#-}
         
         if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-           echo \"[DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+           echo \"[\$(date +%H:%M:%S)] [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
            TOTAL_SYS_DEL=\$((TOTAL_SYS_DEL + 1))
         else
-           echo \"[DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+           echo \"[\$(date +%H:%M:%S)] [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
            TOTAL_SYS_FAIL=\$((TOTAL_SYS_FAIL + 1))
         fi
         draw_bar \"\$CUR_SYS\" \"\$SYS_COUNT\"
