@@ -214,8 +214,8 @@ try:
         for msg in items:
             id = msg.get(\"id\", \"\")
             dt = datetime.datetime.fromtimestamp(msg.get(\"date\", 0)/1000.0)
-            d_str = dt.strftime(\"%m/%d/%y\")
-            t_str = dt.strftime(\"%H:%M\")
+            d_str = dt.strftime(\"%b %d %Y\")
+            t_str = dt.strftime(\"%H:%M:%S\")
             sender = next((r.get(\"fullAddressQuoted\", r.get(\"address\", \"\")) for r in msg.get(\"recipients\", []) if r.get(\"type\") == \"f\"), \"\")
             subj = msg.get(\"subject\", \"\")
             print(f\"{id}|{d_str}|{t_str}|{sender}|{subj}\")
@@ -262,8 +262,8 @@ try:
         for msg in items:
             id = msg.get(\"id\", \"\")
             dt = datetime.datetime.fromtimestamp(msg.get(\"date\", 0)/1000.0)
-            d_str = dt.strftime(\"%m/%d/%y\")
-            t_str = dt.strftime(\"%H:%M\")
+            d_str = dt.strftime(\"%b %d %Y\")
+            t_str = dt.strftime(\"%H:%M:%S\")
             sender = next((r.get(\"fullAddressQuoted\", r.get(\"address\", \"\")) for r in msg.get(\"recipients\", []) if r.get(\"type\") == \"f\"), \"\")
             subj = msg.get(\"subject\", \"\")
             print(f\"{id}|{d_str}|{t_str}|{sender}|{subj}\")
