@@ -8,7 +8,7 @@
 
 # Server Options
 SERVER_LOCAL="192.168.4.5"
-SERVER_PUBLIC="mail.ptmjl.co.id" # Ganti dengan IP/Domain Public Anda
+SERVER_PUBLIC="103.135.1.51" # IP Public Server Zimbra
 
 SSH_PORT=22
 SSH_USER="root"

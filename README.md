@@ -32,13 +32,13 @@ Agar script bisa berjalan tanpa mengetik password (terutama untuk `zimbra_remote
 
 2.  **Copy Public Key ke Server Zimbra**:
     ```bash
-    ssh-copy-id -i ~/.ssh/zimbra_admin.pub root@192.168.4.5
+    ssh-copy-id -i ~/.ssh/zimbra_admin.pub root@103.135.1.51
     ```
     *Masukkan password root server sekali ini saja.*
 
 3.  **Verifikasi Akses**:
     ```bash
-    ssh -i ~/.ssh/zimbra_admin root@192.168.4.5 "echo 'Koneksi Sukses'"
+    ssh -i ~/.ssh/zimbra_admin root@103.135.1.51 "echo 'Koneksi Sukses'"
     ```
 
 ## 🔍 Cara Kerja
