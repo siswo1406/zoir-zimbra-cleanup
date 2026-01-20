@@ -7,12 +7,12 @@
 # ---------- CONFIG ----------
 
 # Server Options
-SERVER_LOCAL="192.168.4.5"
-SERVER_PUBLIC="103.135.1.51" # IP Public Server Zimbra
+SERVER_LOCAL="xxx.xxx.xxx.xxx"
+SERVER_PUBLIC="xxx.xxx.xxx.xxx" # IP Public Server Zimbra
 
 SSH_PORT=22
 SSH_USER="root"
-SSH_KEY="$HOME/.ssh/zimbra_admin"
+SSH_KEY="$HOME/.ssh/your_private_key"
 
 # Cleanup Options
 THRESHOLD=90        # Process accounts >= 90% usage

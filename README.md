@@ -26,19 +26,19 @@ Agar script bisa berjalan tanpa mengetik password (terutama untuk `zimbra_remote
 
 1.  **Generate Private & Public Key** (di laptop admin):
     ```bash
-    ssh-keygen -t ed25519 -f ~/.ssh/zimbra_admin -C "admin_name@ptmjl"
+    ssh-keygen -t ed25519 -f ~/.ssh/your_key -C "admin_name@yourdomain"
     ```
     *Gunakan passphrase kosong jika ingin benar-benar otomatis.*
 
 2.  **Copy Public Key ke Server Zimbra**:
     ```bash
-    ssh-copy-id -i ~/.ssh/zimbra_admin.pub root@103.135.1.51
+    ssh-copy-id -i ~/.ssh/your_key.pub root@xxx.xxx.xxx.xxx
     ```
     *Masukkan password root server sekali ini saja.*
 
 3.  **Verifikasi Akses**:
     ```bash
-    ssh -i ~/.ssh/zimbra_admin root@103.135.1.51 "echo 'Koneksi Sukses'"
+    ssh -i ~/.ssh/your_key root@xxx.xxx.xxx.xxx "echo 'Koneksi Sukses'"
     ```
 
 ## 🔍 Cara Kerja
