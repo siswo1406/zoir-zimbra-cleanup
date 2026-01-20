@@ -114,24 +114,25 @@ while IFS="|" read -r MAILBOX PERCENT; do
             break
         fi
 
-        # Parse results - Fixed to allow negative IDs (-?[0-9])
+        # Parse results - Extra detail for parity with remote script
         grep -E "^[[:space:]]*-?[0-9]+\." "$RAW_SEARCH" | tr -s " " | awk '{ 
           id = ($2 ~ /^-?[0-9]+$/) ? $2 : $3;
           s_idx = (id == $2) ? 4 : 5;
-          d = $(NF-1); 
+          date = $(NF-1); time = $NF; 
+          sender = $s_idx;
           subj = ""; for(i=s_idx+1; i<=(NF-2); i++) subj = subj (subj==""?"":" ") $i;
-          printf "%s|%s|%s\n", id, d, subj;
+          printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
         }' > "$TMP_DIR/msg_list.txt"
 
         MSG_COUNT=$(wc -l < "$TMP_DIR/msg_list.txt")
         [ "$MSG_COUNT" -eq 0 ] && break
 
-        while IFS="|" read -r ID DATE SUBJ; do
+        while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then
-                echo "   [DELETE] ID:$ID | DATE:$DATE | SUBJ:$SUBJ | STATUS:OK" >> "$LOG_FILE"
+                echo "[DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
                 TOTAL_DELETED=$((TOTAL_DELETED + 1))
             else
-                echo "   [DELETE] ID:$ID | DATE:$DATE | SUBJ:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
+                echo "[DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
                 TOTAL_FAILED=$((TOTAL_FAILED + 1))
             fi
         done < "$TMP_DIR/msg_list.txt"
@@ -149,17 +150,18 @@ while IFS="|" read -r MAILBOX PERCENT; do
         grep -E "^[[:space:]]*-?[0-9]+\." "$SYS_RAW" | tr -s " " | awk '{ 
           id = ($2 ~ /^-?[0-9]+$/) ? $2 : $3;
           s_idx = (id == $2) ? 4 : 5;
-          d = $(NF-1); 
+          date = $(NF-1); time = $NF; 
+          sender = $s_idx;
           subj = ""; for(i=s_idx+1; i<=(NF-2); i++) subj = subj (subj==""?"":" ") $i;
-          printf "%s|%s|%s\n", id, d, subj;
+          printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
         }' > "$TMP_DIR/sys_list.txt"
         
-        while IFS="|" read -r ID DATE SUBJ; do
+        while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then
-                echo "   [SYSTEM] ID:$ID | DATE:$DATE | SUBJ:$SUBJ | STATUS:OK" >> "$LOG_FILE"
+                echo "[DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
                 TOTAL_SYS_DEL=$((TOTAL_SYS_DEL + 1))
             else
-                echo "   [SYSTEM] ID:$ID | DATE:$DATE | SUBJ:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
+                echo "[DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
                 TOTAL_SYS_FAIL=$((TOTAL_SYS_FAIL + 1))
             fi
         done < "$TMP_DIR/sys_list.txt"
