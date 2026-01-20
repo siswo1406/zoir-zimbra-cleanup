@@ -251,6 +251,7 @@ while read -r MAILBOX; do
     done < \"\$TMP_LIST\"
     echo # Newline after bar
   done
+  echo \"   [SUMMARY] Business Items -> Deleted: \$TOTAL_DELETED | Search: OK\" >> \"\$LOG_FILE\"
 
   # SYSTEM MAILS
   > \"\$TMP_LIST\"
@@ -285,11 +286,14 @@ while read -r MAILBOX; do
       done < \"\$TMP_LIST\"
       echo
       echo \"   -> System Deleted: \$TOTAL_SYS_DEL | Failed: \$TOTAL_SYS_FAIL\"
+      echo \"   [SUMMARY] System Alerts  -> Deleted: \$TOTAL_SYS_DEL | Failed: \$TOTAL_SYS_FAIL | Search: OK\" >> \"\$LOG_FILE\"
     else
       echo \"   [SYSTEM] No alerts found\"
+      echo \"   [SUMMARY] System Alerts  -> No alerts found\" >> \"\$LOG_FILE\"
     fi
   else
     echo \"   [SYSTEM] Search FAILED for \$MAILBOX\" | tee -a \"\$LOG_FILE\"
+    echo \"   [SUMMARY] System Alerts  -> Search: FAILED\" >> \"\$LOG_FILE\"
   fi
 
   echo \"   -> Deleted Total: \$TOTAL_DELETED items\"
