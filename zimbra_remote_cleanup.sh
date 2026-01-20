@@ -80,6 +80,7 @@ if ! flock -n 200; then
   echo \"[REMOTE] [ERROR] Another remote cleanup instance is already running on server.\"
   exit 1
 fi
+rm -rf \"\$LOG_BASE\"/tmp_remote_* 2>/dev/null
 
 TMP_DIR=\"\$LOG_BASE/tmp_remote_\$(date +%H%M%S)_\$\$\"
 ACCOUNTS_LIST=\"\$TMP_DIR/accounts_over_quota.txt\"

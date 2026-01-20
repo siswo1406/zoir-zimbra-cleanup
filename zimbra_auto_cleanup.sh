@@ -48,8 +48,9 @@ if ! flock -n 200; then
     exit 1
 fi
 
-# C. Setup Workspace & Housekeeping
-find "$LOG_BASE" -maxdepth 1 -type d -name "auto_tmp_*" -mtime +1 -exec rm -rf {} + 2>/dev/null
+# C. Setup Workspace & Housekeeping (Move after lock to avoid deleting active sessions)
+# Since we have the lock, any existing auto_tmp_* is an orphan from a crashed/killed run
+rm -rf "$LOG_BASE"/auto_tmp_* 2>/dev/null
 
 TMP_DIR="$LOG_BASE/auto_tmp_$$"
 mkdir -p "$TMP_DIR"
