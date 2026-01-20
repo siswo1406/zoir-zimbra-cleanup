@@ -21,8 +21,29 @@ Script interaktif untuk dijalankan dari laptop/PC admin. Berguna untuk pembersih
   2. Jalankan: `./zimbra_remote_cleanup.sh`.
   3. Pilih koneksi server dan konfirmasi eksekusi.
 
-## 🔍 Cara Kerja
+## � Keamanan & SSH Key Setup (Penting)
+Agar script bisa berjalan tanpa mengetik password (terutama untuk `zimbra_remote_cleanup.sh`), ikuti langkah setup key ini untuk tim admin/junior:
+
+1.  **Generate Private & Public Key** (di laptop admin):
+    ```bash
+    ssh-keygen -t ed25519 -f ~/.ssh/zimbra_admin -C "admin_name@ptmjl"
+    ```
+    *Gunakan passphrase kosong jika ingin benar-benar otomatis.*
+
+2.  **Copy Public Key ke Server Zimbra**:
+    ```bash
+    ssh-copy-id -i ~/.ssh/zimbra_admin.pub root@192.168.4.5
+    ```
+    *Masukkan password root server sekali ini saja.*
+
+3.  **Verifikasi Akses**:
+    ```bash
+    ssh -i ~/.ssh/zimbra_admin root@192.168.4.5 "echo 'Koneksi Sukses'"
+    ```
+
+## �🔍 Cara Kerja
 Script akan melakukan scanning terhadap akun yang penggunaan storage-nya `>= 90%` (default), kemudian menghapus email:
+...
 - **Bisnis**: Subject/content berisi kata kunci (penjualan, rekap doc, laporan kasir, dll) yang berumur **lebih dari 2 hari**.
 - **Sistem**: Email pemberitahuan kuota (*quota warning*).
 - **Sampah**: Mengosongkan folder `/Trash` secara otomatis.
