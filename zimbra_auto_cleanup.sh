@@ -12,7 +12,7 @@ DAYS_KEEP=2         # Older than 2 days
 LOG_KEEP_DAYS=7     # Keep logs for 7 days
 
 LOG_BASE="/opt/zimbra/.log-zimbra-cleanup"
-LOG_FILE="$LOG_BASE/auto_cleanup_$(date +%Y%m%d).log"
+LOG_FILE="$LOG_BASE/zimbra_cleanup_$(date +%Y%m%d).log"
 LOCK_FILE="/tmp/zimbra_auto_cleanup.lock"
 
 ZMPROV="/opt/zimbra/bin/zmprov"
@@ -93,13 +93,13 @@ fi
 
 # ---------- 5. MAIN PROCESSING LOOP ----------
 while IFS="|" read -r MAILBOX PERCENT; do
-    echo "$(date '+%b %d %Y - %H:%M:%S') [PROCESS] $MAILBOX (Usage: $PERCENT%)" >> "$LOG_FILE"
+    echo "$(date '+%b %d %Y - %H:%M:%S') [AUTO][PROCESS] $MAILBOX (Usage: $PERCENT%)" >> "$LOG_FILE"
     
     # --- A. Empty Trash ---
     if $ZMMAILBOX -z -m "$MAILBOX" ef /Trash > /dev/null 2>&1; then
-        echo "   [TRASH] OK" >> "$LOG_FILE"
+        echo "   [AUTO][TRASH] OK" >> "$LOG_FILE"
     else
-        echo "   [TRASH] SKIPPED (empty or error)" >> "$LOG_FILE"
+        echo "   [AUTO][TRASH] SKIPPED (empty or error)" >> "$LOG_FILE"
     fi
 
     # --- B. Business Cleanup ---
@@ -110,7 +110,7 @@ while IFS="|" read -r MAILBOX PERCENT; do
     while true; do
         RAW_SEARCH="$TMP_DIR/search_raw.txt"
         if ! $ZMMAILBOX -z -m "$MAILBOX" s -l 50 -v "$QUERY_BISNIS" > "$RAW_SEARCH" 2>&1; then
-            echo "$(date '+%b %d %Y - %H:%M:%S') [ERROR] zmmailbox search failed for $MAILBOX" >> "$LOG_FILE"
+            echo "$(date '+%b %d %Y - %H:%M:%S') [AUTO][ERROR] zmmailbox search failed for $MAILBOX" >> "$LOG_FILE"
             SEARCH_STATUS="ERROR"
             break
         fi
@@ -144,15 +144,15 @@ except Exception:
 
         while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then
-                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [AUTO][DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
                 TOTAL_DELETED=$((TOTAL_DELETED + 1))
             else
-                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [AUTO][DELETE][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
                 TOTAL_FAILED=$((TOTAL_FAILED + 1))
             fi
         done < "$TMP_DIR/msg_list.txt"
     done
-    echo "   [SUMMARY] Business Items -> Deleted: $TOTAL_DELETED | Failed: $TOTAL_FAILED | Search: $SEARCH_STATUS" >> "$LOG_FILE"
+    echo "   [AUTO][SUMMARY] Business Items -> Deleted: $TOTAL_DELETED | Failed: $TOTAL_FAILED | Search: $SEARCH_STATUS" >> "$LOG_FILE"
 
     # --- C. System Cleanup (Detailed Audit) ---
     TOTAL_SYS_DEL=0
@@ -184,21 +184,21 @@ except Exception:
         
         while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then
-                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [AUTO][DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:OK" >> "$LOG_FILE"
                 TOTAL_SYS_DEL=$((TOTAL_SYS_DEL + 1))
             else
-                echo "$(date '+%b %d %Y - %H:%M:%S') [DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
+                echo "$(date '+%b %d %Y - %H:%M:%S') [AUTO][DELETE][SYSTEM][$MAILBOX] ID:$ID | DATE:$DATE | TIME:$TIME | SENDER:$SENDER | INFO:$SUBJ | STATUS:FAILED" >> "$LOG_FILE"
                 TOTAL_SYS_FAIL=$((TOTAL_SYS_FAIL + 1))
             fi
         done < "$TMP_DIR/sys_list.txt"
         if [ "$(wc -l < "$TMP_DIR/sys_list.txt")" -eq 0 ]; then
-             echo "   [SYSTEM] No alerts found" >> "$LOG_FILE"
+             echo "   [AUTO][SYSTEM] No alerts found" >> "$LOG_FILE"
         fi
     else
-        echo "   [SYSTEM] Search FAILED for $MAILBOX" >> "$LOG_FILE"
+        echo "   [AUTO][SYSTEM] Search FAILED for $MAILBOX" >> "$LOG_FILE"
         SYS_SEARCH_ST="FAILED"
     fi
-    echo "   [SUMMARY] System Alerts  -> Deleted: $TOTAL_SYS_DEL | Failed: $TOTAL_SYS_FAIL | Search: $SYS_SEARCH_ST" >> "$LOG_FILE"
+    echo "   [AUTO][SUMMARY] System Alerts  -> Deleted: $TOTAL_SYS_DEL | Failed: $TOTAL_SYS_FAIL | Search: $SYS_SEARCH_ST" >> "$LOG_FILE"
 
 done < "$ACCOUNTS_LIST"
 

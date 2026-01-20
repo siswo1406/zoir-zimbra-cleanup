@@ -59,7 +59,7 @@ LOG_KEEP_DAYS=$LOG_KEEP_DAYS
 
 # Inherited or dynamic
 LOG_BASE=\"/opt/zimbra/.log-zimbra-cleanup\"
-LOG_FILE=\"\$LOG_BASE/remote_cleanup_\$(date +%Y%m%d).log\"
+LOG_FILE=\"\$LOG_BASE/zimbra_cleanup_\$(date +%Y%m%d).log\"
 LOCK_FILE=\"/tmp/zimbra_remote_cleanup.lock\"
 
 # Locking - ensure single instance on server
@@ -188,9 +188,9 @@ while read -r MAILBOX; do
   # ---------- 0. EMPTY TRASH ----------
   echo \"   [TRASH] Emptying /Trash folder...\"
   if zmmailbox -z -m \$MAILBOX ef /Trash > /dev/null 2>&1; then
-     echo \"[TRASH][\$MAILBOX] Status: OK\" >> \"\$LOG_FILE\"
+     echo \"[REMOTE][TRASH][\$MAILBOX] Status: OK\" >> \"\$LOG_FILE\"
   else
-     echo \"[TRASH][\$MAILBOX] Status: FAILED/EMPTY\" >> \"\$LOG_FILE\"
+     echo \"[REMOTE][TRASH][\$MAILBOX] Status: FAILED/EMPTY\" >> \"\$LOG_FILE\"
   fi
   
   while true; do
@@ -236,16 +236,16 @@ except Exception:
       
       # DELETE ITEM
       if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
          TOTAL_DELETED=\$((TOTAL_DELETED + 1))
       else
-         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
       fi
       draw_bar \"\$CUR_MSG\" \"\$COUNT\"
     done < \"\$TMP_LIST\"
     echo # Newline after bar
   done
-  echo \"   [SUMMARY] Business Items -> Deleted: \$TOTAL_DELETED | Search: OK\" >> \"\$LOG_FILE\"
+  echo \"   [REMOTE][SUMMARY] Business Items -> Deleted: \$TOTAL_DELETED | Search: OK\" >> \"\$LOG_FILE\"
 
   # SYSTEM MAILS
   > \"\$TMP_LIST\"
@@ -282,20 +282,20 @@ except Exception:
         DISPLAY_ID=\${ID#-}
         
         if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
            TOTAL_SYS_DEL=\$((TOTAL_SYS_DEL + 1))
         else
-           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
            TOTAL_SYS_FAIL=\$((TOTAL_SYS_FAIL + 1))
         fi
         draw_bar \"\$CUR_SYS\" \"\$SYS_COUNT\"
       done < \"\$TMP_LIST\"
       echo
       echo \"   -> System Deleted: \$TOTAL_SYS_DEL | Failed: \$TOTAL_SYS_FAIL\"
-      echo \"   [SUMMARY] System Alerts  -> Deleted: \$TOTAL_SYS_DEL | Failed: \$TOTAL_SYS_FAIL | Search: OK\" >> \"\$LOG_FILE\"
+      echo \"   [REMOTE][SUMMARY] System Alerts  -> Deleted: \$TOTAL_SYS_DEL | Failed: \$TOTAL_SYS_FAIL | Search: OK\" >> \"\$LOG_FILE\"
     else
       echo \"   [SYSTEM] No alerts found\"
-      echo \"   [SUMMARY] System Alerts  -> No alerts found\" >> \"\$LOG_FILE\"
+      echo \"   [REMOTE][SUMMARY] System Alerts  -> No alerts found\" >> \"\$LOG_FILE\"
     fi
   else
     echo \"   [SYSTEM] Search FAILED for \$MAILBOX\" | tee -a \"\$LOG_FILE\"
