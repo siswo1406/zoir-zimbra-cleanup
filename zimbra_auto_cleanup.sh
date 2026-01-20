@@ -64,8 +64,8 @@ trap cleanup_handler EXIT INT TERM
 
 # ---------- 2. LOGGING PREP ----------
 echo "--------------------------------------------------" >> "$LOG_FILE"
-echo "AUTO RUN START - $(date)" >> "$LOG_FILE"
-echo "Threshold: $THRESHOLD% | Before: $CHECK_DATE" >> "$LOG_FILE"
+echo "[AUTO] RUN START - $(date)" >> "$LOG_FILE"
+echo "[AUTO] Threshold: $THRESHOLD% | Before: $CHECK_DATE" >> "$LOG_FILE"
 echo "--------------------------------------------------" >> "$LOG_FILE"
 
 # ---------- 3. QUERY DEFINITIONS ----------
@@ -204,7 +204,7 @@ done < "$ACCOUNTS_LIST"
 
 # ---------- 6. CLEANUP & ROTATION ----------
 echo "--------------------------------------------------" >> "$LOG_FILE"
-echo "AUTO RUN END - $(date)" >> "$LOG_FILE"
+echo "[AUTO] RUN END - $(date)" >> "$LOG_FILE"
 echo "--------------------------------------------------" >> "$LOG_FILE"
 
 find "$LOG_BASE" -name "*.log" -mtime +$LOG_KEEP_DAYS -delete

@@ -79,7 +79,7 @@ mkdir -p \"\$LOG_BASE\"
 
 # Trap Functions
 on_cancel() {
-  echo \"[ABORT] User cancelled execution at \$(date)\" >> \"\$LOG_FILE\"
+  echo \"[REMOTE][ABORT] User cancelled execution at \$(date)\" >> \"\$LOG_FILE\"
   cleanup
   exit 1
 }
@@ -97,9 +97,8 @@ trap on_cancel INT TERM HUP
 find \"\$LOG_BASE\" -maxdepth 1 -type d -name \"tmp_remote_*\" -mtime +0 -exec rm -rf {} + 2>/dev/null
 
 echo \"--------------------------------------------------\" >> \"\$LOG_FILE\"
-echo \"REMOTE RUN START - \$(date)\" >> \"\$LOG_FILE\"
-echo \"Threshold: \$THRESHOLD%\" >> \"\$LOG_FILE\"
-echo \"Before: \$CHECK_DATE\" >> \"\$LOG_FILE\"
+echo \"[REMOTE] RUN START - \$(date)\" >> \"\$LOG_FILE\"
+echo \"[REMOTE] Threshold: \$THRESHOLD% | Before: \$CHECK_DATE\" >> \"\$LOG_FILE\"
 echo \"--------------------------------------------------\" >> \"\$LOG_FILE\"
 
 # ---------- 1. IDENTIFY FULL ACCOUNTS ----------
@@ -303,7 +302,7 @@ except Exception:
   fi
 
   echo \"   -> Deleted Total: \$TOTAL_DELETED items\"
-  echo \"[REMOTE] \$MAILBOX | Deleted: \$TOTAL_DELETED\" >> \"\$LOG_FILE\"
+  echo \"[REMOTE][SUMMARY] \$MAILBOX | Deleted Total: \$TOTAL_DELETED\" >> \"\$LOG_FILE\"
 
 done < \"\$ACCOUNTS_LIST\"
 
