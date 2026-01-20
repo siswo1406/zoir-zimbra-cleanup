@@ -108,21 +108,24 @@ while IFS="|" read -r MAILBOX PERCENT; do
     
     while true; do
         RAW_SEARCH="$TMP_DIR/search_raw.txt"
-        if ! $ZMMAILBOX -z -m "$MAILBOX" s -l 50 "$QUERY_BISNIS" > "$RAW_SEARCH" 2>&1; then
-            echo "   [ERROR] zmmailbox search failed for $MAILBOX" >> "$LOG_FILE"
+        if ! $ZMMAILBOX -z -m "$MAILBOX" s -l 50 -v "$QUERY_BISNIS" > "$RAW_SEARCH" 2>&1; then
+            echo "$(date '+%b %d %Y - %H:%M:%S') [ERROR] zmmailbox search failed for $MAILBOX" >> "$LOG_FILE"
             SEARCH_STATUS="ERROR"
             break
         fi
 
-        # Parse results - Extra detail for parity with remote script
-        grep -E "^[[:space:]]*-?[0-9]+\." "$RAW_SEARCH" | tr -s " " | awk '{ 
-          id = ($2 ~ /^-?[0-9]+$/) ? $2 : $3;
-          s_idx = (id == $2) ? 4 : 5;
-          date = $(NF-1); time = $NF; 
-          sender = $s_idx;
-          subj = ""; for(i=s_idx+1; i<=(NF-2); i++) subj = subj (subj==""?"":" ") $i;
-          printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
-        }' > "$TMP_DIR/msg_list.txt"
+        # Parse results - Using verbose output to get COMPLETE (Lengkap) Sender
+        awk '
+          /^  Id: / { id=$2; sub(/\.$/, "", id) }
+          /^  Date: / { date=$2; time=$3 }
+          /^  From: / { f=index($0, ": "); sender=substr($0, f+2) }
+          /^  Subject: / { f=index($0, ": "); subj=substr($0, f+2) }
+          /^  Size: / { 
+            if (id != "") {
+              printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
+              id=""; date=""; time=""; sender=""; subj="";
+            }
+          }' "$RAW_SEARCH" > "$TMP_DIR/msg_list.txt"
 
         MSG_COUNT=$(wc -l < "$TMP_DIR/msg_list.txt")
         [ "$MSG_COUNT" -eq 0 ] && break
@@ -145,16 +148,19 @@ while IFS="|" read -r MAILBOX PERCENT; do
     SYS_SEARCH_ST="OK"
     
     SYS_RAW="$TMP_DIR/sys_raw.txt"
-    if $ZMMAILBOX -z -m "$MAILBOX" s -l 100 "$QUERY_SYSTEM" > "$SYS_RAW" 2>&1; then
+    if $ZMMAILBOX -z -m "$MAILBOX" s -l 100 -v "$QUERY_SYSTEM" > "$SYS_RAW" 2>&1; then
         # Parse system alerts same way as business items - Fixed for negative IDs
-        grep -E "^[[:space:]]*-?[0-9]+\." "$SYS_RAW" | tr -s " " | awk '{ 
-          id = ($2 ~ /^-?[0-9]+$/) ? $2 : $3;
-          s_idx = (id == $2) ? 4 : 5;
-          date = $(NF-1); time = $NF; 
-          sender = $s_idx;
-          subj = ""; for(i=s_idx+1; i<=(NF-2); i++) subj = subj (subj==""?"":" ") $i;
-          printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
-        }' > "$TMP_DIR/sys_list.txt"
+        awk '
+          /^  Id: / { id=$2; sub(/\.$/, "", id) }
+          /^  Date: / { date=$2; time=$3 }
+          /^  From: / { f=index($0, ": "); sender=substr($0, f+2) }
+          /^  Subject: / { f=index($0, ": "); subj=substr($0, f+2) }
+          /^  Size: / { 
+            if (id != "") {
+              printf "%s|%s|%s|%s|%s\n", id, date, time, sender, subj;
+              id=""; date=""; time=""; sender=""; subj="";
+            }
+          }' "$SYS_RAW" > "$TMP_DIR/sys_list.txt"
         
         while IFS="|" read -r ID DATE TIME SENDER SUBJ; do
             if $ZMMAILBOX -z -m "$MAILBOX" dc "$ID" > /dev/null 2>&1; then

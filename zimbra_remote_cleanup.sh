@@ -208,7 +208,7 @@ while read -r MAILBOX; do
     > \"\$TMP_LIST\"
     
     # Search: Save RAW output to file first
-    if ! zmmailbox -z -m \$MAILBOX s -l 50 \"\$QUERY_BISNIS\" > \"\$TMP_DIR/raw_search.txt\" 2>&1; then
+    if ! zmmailbox -z -m \$MAILBOX s -l 50 -v \"\$QUERY_BISNIS\" > \"\$TMP_DIR/raw_search.txt\" 2>&1; then
        echo \"   [ERROR] zmmailbox search failed for \$MAILBOX\" | tee -a \"\$LOG_FILE\"
        break
     fi
@@ -255,7 +255,7 @@ while read -r MAILBOX; do
 
   # SYSTEM MAILS
   > \"\$TMP_LIST\"
-  if zmmailbox -z -m \$MAILBOX s -l 500 \"\$QUERY_SYSTEM\" > \"\$TMP_DIR/raw_sys.txt\" 2>&1; then
+  if zmmailbox -z -m \$MAILBOX s -l 500 -v \"\$QUERY_SYSTEM\" > \"\$TMP_DIR/raw_sys.txt\" 2>&1; then
     grep -E \"^[[:space:]]*-?[0-9]+\.\" \"\$TMP_DIR/raw_sys.txt\" | tr -s \" \" | awk '\''{ 
       id = (\$2 ~ /^-?[0-9]+\$/) ? \$2 : \$3;
       s_idx = (id == \$2) ? 4 : 5;
