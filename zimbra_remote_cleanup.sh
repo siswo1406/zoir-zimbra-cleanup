@@ -17,6 +17,7 @@ SSH_KEY="$HOME/.ssh/zimbra_admin"
 # Cleanup Criteria
 THRESHOLD=90        # Process accounts >= 90% quota usage
 DAYS_KEEP=2        # Delete emails older than X days
+LOG_KEEP_DAYS=7    # Keep logs for 7 days
 
 # Logger
 LOG_LOCAL="$HOME/zimbra_remote_cleanup.log"
@@ -63,10 +64,10 @@ echo "[LOCAL] Connecting to $SERVER..." | tee -a "$LOG_LOCAL"
 # We inject local variables directly into the command string to avoid 'su -' environment clearing issues
 ssh -tt -p "$SSH_PORT" -i "$SSH_KEY" ${SSH_USER}@${SERVER} "
 su - zimbra -c '
-# ---------- DEFINED VARS ----------
 # Values injected from local laptop shell
 THRESHOLD=$THRESHOLD
 CHECK_DATE=\"$BEFORE_DATE\"
+LOG_KEEP_DAYS=$LOG_KEEP_DAYS
 
 # Inherited or dynamic
 LOG_BASE=\"/opt/zimbra/.log-zimbra-cleanup\"
@@ -196,14 +197,17 @@ while read -r MAILBOX; do
     > \"\$TMP_LIST\"
     
     # Search: Save RAW output to file first
-    zmmailbox -z -m \$MAILBOX s -l 50 \"\$QUERY_BISNIS\" > \"\$TMP_DIR/raw_search.txt\"
+    if ! zmmailbox -z -m \$MAILBOX s -l 50 \"\$QUERY_BISNIS\" > \"\$TMP_DIR/raw_search.txt\" 2>&1; then
+       echo \"   [ERROR] zmmailbox search failed for \$MAILBOX\" | tee -a \"\$LOG_FILE\"
+       break
+    fi
     
     # Check if empty or no results
     if grep -q \"No results found\" \"\$TMP_DIR/raw_search.txt\"; then
        break
     fi
 
-    grep -E \"^[[:space:]]*[0-9]+\.\" \"\$TMP_DIR/raw_search.txt\" | tr -s \" \" | awk '\''{ 
+    grep -E \"^[[:space:]]*-?[0-9]+\.\" \"\$TMP_DIR/raw_search.txt\" | tr -s \" \" | awk '\''{ 
       # Robustly find ID: it is the first field that looks like a number (can be -)
       id = (\$2 ~ /^-?[0-9]+\$/) ? \$2 : \$3;
       # Folder is 1 col after ID, Sender is 1 col after Folder
@@ -239,39 +243,51 @@ while read -r MAILBOX; do
 
   # SYSTEM MAILS
   > \"\$TMP_LIST\"
-  zmmailbox -z -m \$MAILBOX s -l 500 \"\$QUERY_SYSTEM\" > \"\$TMP_DIR/raw_sys.txt\"
-  
-  grep -E \"^[[:space:]]*[0-9]+\.\" \"\$TMP_DIR/raw_sys.txt\" | tr -s \" \" | awk '\''{ 
-    id = (\$2 ~ /^-?[0-9]+\$/) ? \$2 : \$3;
-    s_idx = (id == \$2) ? 4 : 5;
-    date = \$(NF-1); time = \$NF; 
-    sender = \$s_idx;
-    subject = \"\"; for(i=s_idx+1; i<=(NF-2); i++) subject = subject (subject==\"\"?\"\":\" \") \$i;
-    printf \"%s|%s|%s|%s|%s\\n\", id, date, time, sender, subject;
-  }'\'' > \"\$TMP_LIST\"
+  if zmmailbox -z -m \$MAILBOX s -l 500 \"\$QUERY_SYSTEM\" > \"\$TMP_DIR/raw_sys.txt\" 2>&1; then
+    grep -E \"^[[:space:]]*-?[0-9]+\.\" \"\$TMP_DIR/raw_sys.txt\" | tr -s \" \" | awk '\''{ 
+      id = (\$2 ~ /^-?[0-9]+\$/) ? \$2 : \$3;
+      s_idx = (id == \$2) ? 4 : 5;
+      date = \$(NF-1); time = \$NF; 
+      sender = \$s_idx;
+      subject = \"\"; for(i=s_idx+1; i<=(NF-2); i++) subject = subject (subject==\"\"?\"\":\" \") \$i;
+      printf \"%s|%s|%s|%s|%s\\n\", id, date, time, sender, subject;
+    }'\'' > \"\$TMP_LIST\"
 
-  SYS_COUNT=\$(wc -l < \"\$TMP_LIST\")
-  if [ \"\$SYS_COUNT\" -gt 0 ]; then
-    echo \"   [SYSTEM] Found \$SYS_COUNT notification(s)...\"
-    CUR_SYS=0
-    while IFS=\"|\" read -r ID DATE TIME SENDER SUBJECT; do
-      CUR_SYS=\$((CUR_SYS + 1))
-      DISPLAY_ID=\${ID#-}
-      
-      if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-         echo \"[DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
-      else
-         echo \"[DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
-      fi
-      draw_bar \"\$CUR_SYS\" \"\$SYS_COUNT\"
-    done < \"\$TMP_LIST\"
-    echo
+    SYS_COUNT=\$(wc -l < \"\$TMP_LIST\")
+    if [ \"\$SYS_COUNT\" -gt 0 ]; then
+      echo \"   [SYSTEM] Found \$SYS_COUNT notification(s)...\"
+      CUR_SYS=0
+      TOTAL_SYS_DEL=0
+      TOTAL_SYS_FAIL=0
+      while IFS=\"|\" read -r ID DATE TIME SENDER SUBJECT; do
+        CUR_SYS=\$((CUR_SYS + 1))
+        DISPLAY_ID=\${ID#-}
+        
+        if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
+           echo \"[DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+           TOTAL_SYS_DEL=\$((TOTAL_SYS_DEL + 1))
+        else
+           echo \"[DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+           TOTAL_SYS_FAIL=\$((TOTAL_SYS_FAIL + 1))
+        fi
+        draw_bar \"\$CUR_SYS\" \"\$SYS_COUNT\"
+      done < \"\$TMP_LIST\"
+      echo
+      echo \"   -> System Deleted: \$TOTAL_SYS_DEL | Failed: \$TOTAL_SYS_FAIL\"
+    else
+      echo \"   [SYSTEM] No alerts found\"
+    fi
+  else
+    echo \"   [SYSTEM] Search FAILED for \$MAILBOX\" | tee -a \"\$LOG_FILE\"
   fi
 
   echo \"   -> Deleted Total: \$TOTAL_DELETED items\"
   echo \"[REMOTE] \$MAILBOX | Deleted: \$TOTAL_DELETED\" >> \"\$LOG_FILE\"
 
 done < \"\$ACCOUNTS_LIST\"
+
+# Rotate ALL logs (auto, remote, and manual) in the base directory
+find \"\$LOG_BASE\" -name \"*.log\" -mtime +\$LOG_KEEP_DAYS -delete
 
 rm -rf \"\$TMP_DIR\"
 '
