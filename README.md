@@ -1,41 +1,39 @@
-Zimbra Mailbox Cleanup
-======================
+# Zimbra Mailbox Cleanup Suite
+==========================
 
-Script interaktif untuk membersihkan email lama di Zimbra dengan pola pencarian khusus (data penjualan/laporan) dan pesan sistem "quota warning". Proses berjalan aman dengan loop cek -> hapus -> cek serta pencatatan log.
+Kumpulan script untuk membersihkan email lama di Zimbra secara otomatis maupun manual dengan filter khusus (data penjualan/laporan) dan pesan sistem "quota warning". Dirancang untuk menjaga ketersediaan storage mailbox agar tidak melebihi kuota.
 
-Fitur
-- Generate/cek SSH key otomatis (`~/.ssh/zimbra_admin`) dan copy ke server target.
-- Menanyakan input penting: username mailbox (tanpa domain), batas tanggal, IP/port server, dan pemilik key.
-- Pencarian bertahap dengan progress bar; penghapusan berhenti otomatis jika tidak ada lagi hasil.
-- Log harian tersimpan di `/opt/zimbra/.log-zimbra-cleanup/cleanup_YYYYMMDD.log`.
+## 🛠 Daftar Script
 
-Prasyarat
-- Akses SSH ke server Zimbra sebagai `root` (untuk `su - zimbra`).
-- Zimbra CLI tersedia di server (perintah `zmmailbox`).
-- Jalankan dari mesin yang punya akses jaringan ke server target.
-- Disarankan shell dengan Oh My Zsh + plugin `zsh-autosuggestions` dan `zsh-syntax-highlighting` agar input lebih nyaman.
+### 1. `zimbra_auto_cleanup.sh` (Otomatis/Cron)
+Script utama yang dirancang untuk berjalan di server Zimbra melalui Cron. Sangat stabil dan memiliki fitur pengamanan tingkat tinggi.
+- **Fitur**: Anti-overlap (Locking), Automatical Log Rotation (7 hari), Detailed Audit Logs, Auto-switch user (root to zimbra), Trap cleanup.
+- **Cara Pakai**:
+  1. Letakkan di server Zimbra (contoh: `/opt/zimbra/scripts/`).
+  2. Berikan izin: `chown zimbra:zimbra zimbra_auto_cleanup.sh && chmod +x zimbra_auto_cleanup.sh`.
+  3. Tambah ke crontab user zimbra: `00 01 * * * /opt/zimbra/scripts/zimbra_auto_cleanup.sh > /dev/null 2>&1`.
 
-Setup Repo
-- Clone langsung: `git clone https://git.ptmjl.co.id/MIS/zimbra_cleanup_script.git && cd zimbra-cleanup-script`.
+### 2. `zimbra_remote_cleanup.sh` (Manual/Interaktif)
+Script interaktif untuk dijalankan dari laptop/PC admin. Berguna untuk pembersihan massal secara manual atau backup jika script auto gagal.
+- **Fitur**: Pilihan server (Local/Public), Progress Bar, Konfirmasi sebelum eksekusi, Audit detail per-ID.
+- **Cara Pakai**:
+  1. Pastikan SSH Key sudah setup.
+  2. Jalankan: `./zimbra_remote_cleanup.sh`.
+  3. Pilih koneksi server dan konfirmasi eksekusi.
 
-Cara Pakai
-1) Pastikan skrip bisa dieksekusi: `chmod +x zimbra_cleanup.sh`.
-2) Jalankan: `./zimbra_cleanup.sh`.
-3) Isi prompt:
-   - `Mailbox username`: hanya nama user (domain default `ptmjl.co.id`).
-   - `Before date`: format `MM/DD/YYYY`, mengikuti timezone server.
-   - `Server IP` dan `SSH Port`: kosongkan untuk default `192.168.4.5:22`.
-   - `SSH key owner/name`: nama untuk komentar key (misal `siswo`).
-4) Konfirmasi `Proceed? [Y/n]` untuk memulai eksekusi di server.
+## 🔍 Cara Kerja
+Script akan melakukan scanning terhadap akun yang penggunaan storage-nya `>= 90%` (default), kemudian menghapus email:
+- **Bisnis**: Subject/content berisi kata kunci (penjualan, rekap doc, laporan kasir, dll) yang berumur **lebih dari 2 hari**.
+- **Sistem**: Email pemberitahuan kuota (*quota warning*).
+- **Sampah**: Mengosongkan folder `/Trash` secara otomatis.
 
-Query yang dipakai
-- Bisnis: subject/content berisi kata kunci penjualan/laporan sebelum tanggal batas.
-- Sistem: email quota warning (`subject:"quota warning"` dan `content:"mailbox size has reached"`).
+## 📂 Lokasi Penting di Server
+- **Log Histori**: `/opt/zimbra/.log-zimbra-cleanup/`
+  - `auto_cleanup_YYYYMMDD.log` (Versi Cron)
+  - `remote_cleanup_YYYYMMDD.log` (Versi Manual)
+- **Temporary Workspace**: `/opt/zimbra/.log-zimbra-cleanup/auto_tmp_*` (Dibersihkan otomatis).
 
-Lokasi penting
-- Log: `/opt/zimbra/.log-zimbra-cleanup/cleanup_YYYYMMDD.log`.
-- Temp folder sementara: `/opt/zimbra/.log-zimbra-cleanup/tmp_*` (dibersihkan otomatis).
-
-Catatan
-- Skrip berhenti jika tidak ada lagi hasil pada batch berikutnya.
-- Jalankan di jam non-produksi untuk meminimalkan dampak pengguna.
+## ⚠️ Catatan Keamanan
+- Script hanya menghapus isi email dalam folder tertentu berdasarkan kriteria. **Akun user tidak akan dihapus.**
+- Dilengkapi dengan *parsing* ID negatif untuk memastikan item di shared folder/drafts tetap bisa dibersihkan.
+- Disarankan melakukan pengecekan log secara berkala.
