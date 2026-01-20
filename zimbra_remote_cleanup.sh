@@ -188,9 +188,9 @@ while read -r MAILBOX; do
   # ---------- 0. EMPTY TRASH ----------
   echo \"   [TRASH] Emptying /Trash folder...\"
   if zmmailbox -z -m \$MAILBOX ef /Trash > /dev/null 2>&1; then
-     echo \"[REMOTE][TRASH][\$MAILBOX] Status: OK\" >> \"\$LOG_FILE\"
+     echo \"   [REMOTE][TRASH] OK\" >> \"\$LOG_FILE\"
   else
-     echo \"[REMOTE][TRASH][\$MAILBOX] Status: FAILED/EMPTY\" >> \"\$LOG_FILE\"
+     echo \"   [REMOTE][TRASH] SKIPPED (empty or error)\" >> \"\$LOG_FILE\"
   fi
   
   while true; do
@@ -236,10 +236,10 @@ except Exception:
       
       # DELETE ITEM
       if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE:\$DATE | TIME:\$TIME | SENDER:\$SENDER | INFO:\$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
          TOTAL_DELETED=\$((TOTAL_DELETED + 1))
       else
-         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+         echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][\$MAILBOX] ID:\$DISPLAY_ID | DATE:\$DATE | TIME:\$TIME | SENDER:\$SENDER | INFO:\$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
       fi
       draw_bar \"\$CUR_MSG\" \"\$COUNT\"
     done < \"\$TMP_LIST\"
@@ -282,10 +282,10 @@ except Exception:
         DISPLAY_ID=\${ID#-}
         
         if zmmailbox -z -m \$MAILBOX dc \"\$ID\"; then
-           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
+           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE:\$DATE | TIME:\$TIME | SENDER:\$SENDER | INFO:\$SUBJECT | STATUS:OK\" >> \"\$LOG_FILE\"
            TOTAL_SYS_DEL=\$((TOTAL_SYS_DEL + 1))
         else
-           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE: \$DATE | TIME: \$TIME | SENDER: \$SENDER | INFO: \$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
+           echo \"\$(date '\''+%b %d %Y - %H:%M:%S'\'') [REMOTE][DELETE][SYSTEM][\$MAILBOX] ID:\$DISPLAY_ID | DATE:\$DATE | TIME:\$TIME | SENDER:\$SENDER | INFO:\$SUBJECT | STATUS:FAILED\" >> \"\$LOG_FILE\"
            TOTAL_SYS_FAIL=\$((TOTAL_SYS_FAIL + 1))
         fi
         draw_bar \"\$CUR_SYS\" \"\$SYS_COUNT\"
