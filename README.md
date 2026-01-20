@@ -48,11 +48,13 @@ Script akan melakukan scanning terhadap akun yang penggunaan storage-nya `>= 90%
 - **Sistem**: Email pemberitahuan kuota (*quota warning*).
 - **Sampah**: Mengosongkan folder `/Trash` secara otomatis.
 
-## 📂 Lokasi Penting di Server
+## 📂 Lokasi Penting di Server (ZOIR Ready)
 - **Log Histori**: `/opt/zimbra/.log-zimbra-cleanup/`
-  - `auto_cleanup_YYYYMMDD.log` (Versi Cron)
-  - `remote_cleanup_YYYYMMDD.log` (Versi Manual)
-- **Temporary Workspace**: `/opt/zimbra/.log-zimbra-cleanup/auto_tmp_*` (Dibersihkan otomatis).
+  - `zimbra_cleanup_YYYYMMDD.log`: Log gabungan dari semua aktivitas cleanup.
+- **Identifikasi Log**:
+  - `[AUTO]`: Baris log ini dihasilkan oleh script cron otomatis (`zimbra_auto_cleanup.sh`).
+  - `[REMOTE]`: Baris log ini dihasilkan oleh script manual dari laptop (`zimbra_remote_cleanup.sh`).
+- **Temporary Workspace**: `/opt/zimbra/.log-zimbra-cleanup/tmp_*` (Dibersihkan otomatis).
 
 ## ⚠️ Catatan Keamanan
 - Script hanya menghapus isi email dalam folder tertentu berdasarkan kriteria. **Akun user tidak akan dihapus.**
