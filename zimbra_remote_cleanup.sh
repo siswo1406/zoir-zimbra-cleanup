@@ -72,6 +72,15 @@ LOG_KEEP_DAYS=$LOG_KEEP_DAYS
 # Inherited or dynamic
 LOG_BASE=\"/opt/zimbra/.log-zimbra-cleanup\"
 LOG_FILE=\"\$LOG_BASE/remote_cleanup_\$(date +%Y%m%d).log\"
+LOCK_FILE=\"/tmp/zimbra_remote_cleanup.lock\"
+
+# Locking - ensure single instance on server
+exec 200>\"\$LOCK_FILE\"
+if ! flock -n 200; then
+  echo \"[REMOTE] [ERROR] Another remote cleanup instance is already running on server.\"
+  exit 1
+fi
+
 TMP_DIR=\"\$LOG_BASE/tmp_remote_\$(date +%H%M%S)_\$\$\"
 ACCOUNTS_LIST=\"\$TMP_DIR/accounts_over_quota.txt\"
 TMP_LIST=\"\$TMP_DIR/msg_list.txt\"
@@ -88,6 +97,8 @@ on_cancel() {
 
 cleanup() {
   rm -rf \"\$TMP_DIR\"
+  # Close lock
+  exec 200>&-
 }
 
 trap cleanup EXIT
