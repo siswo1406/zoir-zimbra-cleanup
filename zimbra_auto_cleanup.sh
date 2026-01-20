@@ -115,19 +115,26 @@ while IFS="|" read -r MAILBOX PERCENT; do
             break
         fi
 
-        # Parse results - Using Python to handle JSON output correctly
+        # Parse results - Using Python to handle JSON output correctly (now looking for "hits")
         python3 -c '
 import sys, json, datetime
 try:
-    data = json.load(sys.stdin)
-    for msg in data.get("messages", []):
-        id = msg.get("id", "")
-        dt = datetime.datetime.fromtimestamp(msg.get("date", 0)/1000.0)
-        d_str = dt.strftime("%m/%d/%y")
-        t_str = dt.strftime("%H:%M")
-        sender = next((r.get("fullAddressQuoted", r.get("address", "")) for r in msg.get("recipients", []) if r.get("type") == "f"), "")
-        subj = msg.get("subject", "")
-        print(f"{id}|{d_str}|{t_str}|{sender}|{subj}")
+    raw = sys.stdin.read()
+    # Strip any potential progress messages before the JSON
+    json_start = raw.find("{")
+    if json_start != -1:
+        data = json.loads(raw[json_start:])
+        # Check for "hits" (standard for search) or "messages"
+        items = data.get("hits", data.get("messages", []))
+        for msg in items:
+            id = msg.get("id", "")
+            dt = datetime.datetime.fromtimestamp(msg.get("date", 0)/1000.0)
+            d_str = dt.strftime("%m/%d/%y")
+            t_str = dt.strftime("%H:%M")
+            # Get sender from "recipients" where type is "f" (from)
+            sender = next((r.get("fullAddressQuoted", r.get("address", "")) for r in msg.get("recipients", []) if r.get("type") == "f"), "")
+            subj = msg.get("subject", "")
+            print(f"{id}|{d_str}|{t_str}|{sender}|{subj}")
 except Exception:
     pass
 ' < "$RAW_SEARCH" > "$TMP_DIR/msg_list.txt"
@@ -158,15 +165,19 @@ except Exception:
         python3 -c '
 import sys, json, datetime
 try:
-    data = json.load(sys.stdin)
-    for msg in data.get("messages", []):
-        id = msg.get("id", "")
-        dt = datetime.datetime.fromtimestamp(msg.get("date", 0)/1000.0)
-        d_str = dt.strftime("%m/%d/%y")
-        t_str = dt.strftime("%H:%M")
-        sender = next((r.get("fullAddressQuoted", r.get("address", "")) for r in msg.get("recipients", []) if r.get("type") == "f"), "")
-        subj = msg.get("subject", "")
-        print(f"{id}|{d_str}|{t_str}|{sender}|{subj}")
+    raw = sys.stdin.read()
+    json_start = raw.find("{")
+    if json_start != -1:
+        data = json.loads(raw[json_start:])
+        items = data.get("hits", data.get("messages", []))
+        for msg in items:
+            id = msg.get("id", "")
+            dt = datetime.datetime.fromtimestamp(msg.get("date", 0)/1000.0)
+            d_str = dt.strftime("%m/%d/%y")
+            t_str = dt.strftime("%H:%M")
+            sender = next((r.get("fullAddressQuoted", r.get("address", "")) for r in msg.get("recipients", []) if r.get("type") == "f"), "")
+            subj = msg.get("subject", "")
+            print(f"{id}|{d_str}|{t_str}|{sender}|{subj}")
 except Exception:
     pass
 ' < "$SYS_RAW" > "$TMP_DIR/sys_list.txt"
